@@ -10,6 +10,9 @@ contract StableCoin is ERC20{
     uint256 public feeRatePercentage;
     Oracle public oracle;
 
+    uint256 public constant INITIAL_COLLATERAL_RATIO_PERCENTAGE = 10;
+
+
     constructor(uint256 _feeRatePercentage, Oracle _oracle) ERC20("Stablecoin", "STC"){
         feeRatePercentage = _feeRatePercentage;
         oracle = _oracle;
@@ -41,4 +44,54 @@ contract StableCoin is ERC20{
         }
         return(feeRatePercentage *ethAmount)/100;
     }
+
+    function depositCollateralBuffer() external payable {
+        int256 deficitOrSurPlusInUsd = _getDeficitOrSurplusInContractInUsd();
+
+        if (deficitOrSurPlusInUsd <= 0){
+            uint256 deficitInUsd = uint256(deficitOrSurPlusInUsd * -1);
+            uint256 usdInEthPrice = oracle.getPrice();
+            uint256 deficitInEth = deficitInUsd / usdInEthPrice;
+
+            uint256 requiredInitialSurplusInUsd = (INITIAL_COLLATERAL_RATIO_PERCENTAGE
+             * totalSupply) /100;
+             uint256 requiredInitialSurplusInEth = requiredInitialSurplusInUsd /usdInEthPrice;
+
+             require(
+                msg.value >= deficitInEth + requiredInitialSurplusInEth,
+                "STC: initial collateral ratio is not met"
+             );
+
+            uint256 newInitialSurplusInEth = msg.value / deficitInEth;
+
+            uint256 newInitialSurplusInUsd = newInitialSurplusInEth * usdInEthPrice;
+
+            depositorCoin = new DepositorCoin();
+
+        uint256 mintDepositorCoinAmount =  newInitialSurplusInUsd;
+        depositorCoin.mint(msg.sender, mintDepositorCoinAmount);
+            return;
+        }
+        uint256 surplusInUsd = uint256(deficitOrSurPlusInUsd);
+        uint256 dpcInUsdPrice = _getDPCinUsdPrice(surplusInUsd);
+
+        uint256 mintdepositorCoinAmount = ((msg.value * dpcInUsdPrice) /
+        oracle.getPrice());
+
+        depositorCoin.mint(msg.sender, mintdepositorCoinAmount);
+    }
+
+   function _getDeficitOrSurplusInContractInUsd() private view returns (int256){
+    uint256 ethContractBalanceInUsd = 
+        (address(this).balance - msg.value)* oracle.getPrice();
+        uint256 totalStableCoinBalanceInUsd = totalSupply;
+        int256 deficitOrSurPlus = int256(ethContractBalanceInUsd)- 
+                  int256(totalStableCoinBalanceInUsd);
+
+        return deficitOrSurPlus;
+   } 
+
+   function _getDPCinUsdPrice(uint256 surplusInUsd) private view returns (uint256) {
+    return depositorCoin.totalSupply() / surplusInUsd;
+   } 
 }
