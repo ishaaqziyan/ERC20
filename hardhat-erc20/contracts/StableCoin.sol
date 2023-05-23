@@ -48,7 +48,7 @@ contract StableCoin is ERC20 {
         uint256 remainingRefundingEth = refundingEth - fee;
 
         (bool success, ) = msg.sender.call{value: remainingRefundingEth}("");
-        require(success, "STC: Burn refund transaction failed :(");
+        require(success, "STC: Burn refund transaction failed");
     }
 
     function _getFee(uint256 ethAmount) private view returns (uint256) {
@@ -78,7 +78,7 @@ contract StableCoin is ERC20 {
                 uint256 minimumDepositAmount = deficitInEth +
                     requiredInitialSurplusInEth;
                 revert InitialCollateralRatioError(
-                    "STC: Initial collateral ratio was not met, the minimum is ",
+                    "STC: Initial collateral ratio not met, minimum is ",
                     minimumDepositAmount
                 );
             }

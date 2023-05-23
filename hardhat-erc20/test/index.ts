@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { DepositorCoin } from "../typechain/DepositorCoin";
-import { StableCoin } from "../typechain/StableCoin.sol";
+import { DepositorCoin } from "../typechain-types/DepositorCoin";
+import { StableCoin } from "../typechain-types/StableCoin";
 
 describe("StableCoin", function () {
   let ethUsdPrice: number, feeRatePercentage: number;
